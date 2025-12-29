@@ -1,3 +1,6 @@
+button, a {
+    cursor: pointer;
+}
 .pageWrapper {
   min-height: 100vh;
   display: flex;
@@ -175,4 +178,124 @@
 .uploadForm button:hover {
   background: hsl(var(--primary ) /.9);
   transform: scaleY(1.1);
+}
+
+.adminPage {
+  min-height: 100vh;
+  padding: 2.5rem;
+  background: #f9fafb;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.adminPage h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.adminSubtitle {
+  margin-top: 0.25rem;
+  color: #6b7280;
+}
+
+.tableCard {
+  margin-top: 2rem;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #f3f4f6;
+}
+
+th,
+td {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+th {
+  font-weight: 600;
+  color: #374151;
+}
+
+tbody tr {
+  border-top: 1px solid #e5e7eb;
+}
+
+tbody tr:hover {
+  background: #f9fafb;
+}
+
+.status {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status.approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actions button {
+  padding: 0.4rem 0.65rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.actions .download {
+  background: #e5e7eb;
+}
+
+.actions .approve {
+  background: #0e8f3d;
+  color: white;
+}
+
+.actions .reject {
+  background: #ef4444;
+  color: white;
+}
+
+.actions button:hover {
+  opacity: 0.9;
+}
+
+
+.confidence.low {
+  color: #dc2626; 
+}
+
+.confidence.medium {
+  color: #f59e0b;
+}
+
+.confidence.high {
+  color: #0e8f3d; 
 }
