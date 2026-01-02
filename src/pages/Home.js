@@ -70,22 +70,27 @@ export default function Home() {
         {data && (
           <div>
             <h3>Extracted Information</h3>
-            <p>
+            <table className="extractedTable">
+              <thead>
+                <tr>
+                  <th>Company</th>
+                  <th>Contact</th>
+                  <th>Email</th>
+                  <th>Phone Number</th>
+                  <th>Trade & Scope</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{data.company}</td>
+                  <td>{data.contact}</td>
+                  <td>{data.email}</td>
+                  <td>{data.phone}</td>
+                  <td>{data.trade}</td>
+                </tr>
+              </tbody>
+            </table>
               {console.log("Data: ", data)}
-              <u>Company: </u> {data.company}
-            </p>
-            <p>
-              <u>Contact: </u> {data.contact}
-            </p>
-            <p>
-              <u>Email: </u> {data.email}
-            </p>
-            <p>
-              <u>Phone: </u> {data.phone}
-            </p>
-            <p>
-              <u>Trade & Scope: </u> {data.trade}
-            </p>
           </div>
         )}
       </div>
@@ -127,8 +132,7 @@ function extractFields(text) {
     lines
       .map((l) => l.match(/^(.+?\b(?:llc|inc|corp|company|ltd)\.?\b)/i)?.[1])
       .find(Boolean) || "Unknown";
-      // Look for common company titles like LLC and Inc -- Case-Insensitive.
-
+  // Look for common company titles like LLC and Inc -- Case-Insensitive.
 
   const contact =
     lines.find((l) => /^[A-Z][a-z]+\s[A-Z][a-z]+$/.test(l)) || "Unknown";
