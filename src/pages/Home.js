@@ -14,6 +14,7 @@ export default function Home() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
+  const [isVisible, setIsVisible] = useState(true);
 
   const [isEditing, setIsEditing] = useState(false);
 
