@@ -14,10 +14,22 @@ export default function Home() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
+
+  const [isEditing, setIsEditing] = useState(false);
+
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
     setError("");
     setData(null);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+
+    setData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleUpload = async (e) => {
@@ -25,6 +37,7 @@ export default function Home() {
     if (!file) {
       return;
     }
+    setIsVisible(!isVisible);
 
     const ext = file.name.split(".").pop().toLowerCase();
 
@@ -38,6 +51,7 @@ export default function Home() {
         return;
       }
       setData(extractFields(text));
+
       // console.log("File: ", file);
       console.log("Uploading file:", file.name);
     } catch (err) {
@@ -48,28 +62,37 @@ export default function Home() {
 
   return (
     <div className="pageWrapper">
-      <div className="formContainer">
-        <form className="uploadForm" onSubmit={handleUpload}>
-          <h2>Upload your proposal</h2>
-          {/* //TODO: Should update the file name here later, Before clicking upload. */}
-          <p className="subtitle">Select a file to upload.</p>
+      {isVisible && (
+        <div className="formContainer">
+          <form className="uploadForm" onSubmit={handleUpload}>
+            <h2>Upload your proposal</h2>
+            {/* //TODO: Should update the file name here later, Before clicking upload. */}
+            <p className="subtitle">Select a file to upload.</p>
 
-          <label className="fileInputLabel">
-            <input
-              type="file"
-              accept=".pdf,.xlsx,.txt"
-              onChange={handleFileChange}
-            />
-            <span>Choose File</span>
-          </label>
+            <label className="fileInputLabel">
+              <input
+                type="file"
+                accept=".pdf,.xlsx,.txt"
+                onChange={handleFileChange}
+              />
+              <span>Choose File</span>
+            </label>
 
-          <button type="submit">Upload</button>
-        </form>
-        {error && <p className="error"> {error} </p>}
+            <button type="submit">Upload</button>
+          </form>
+          {error && <p className="error"> {error} </p>}
+        </div>
+      )}
 
+      <div className="tableWrapper">
         {data && (
           <div>
-            <h3>Extracted Information</h3>
+            <div className="tableTitle">
+              <h3>Extracted Information</h3>
+              <button onClick={() => setIsEditing((prev) => !prev)}>
+                {isEditing ? "Save" : "Edit"}
+              </button>
+            </div>
             <table className="extractedTable">
               <thead>
                 <tr>
@@ -77,20 +100,54 @@ export default function Home() {
                   <th>Contact</th>
                   <th>Email</th>
                   <th>Phone Number</th>
-                  <th>Trade & Scope</th>
+                  {/* <th>Trade & Scope</th> */}
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>{data.company}</td>
-                  <td>{data.contact}</td>
-                  <td>{data.email}</td>
-                  <td>{data.phone}</td>
-                  <td>{data.trade}</td>
+                  <td>
+                    <input
+                      type="text"
+                      name="company"
+                      value={data.company}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      type="text"
+                      name="contact"
+                      value={data.contact}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      type="text"
+                      name="email"
+                      value={data.email}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      type="text"
+                      name="phone"
+                      value={data.phone}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                  </td>
                 </tr>
               </tbody>
             </table>
-              {console.log("Data: ", data)}
+            {console.log("Data: ", data)}
           </div>
         )}
       </div>

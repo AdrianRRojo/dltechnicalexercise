@@ -62,7 +62,7 @@ button, a {
 }
 
 /* Upload button */
-.uploadForm button {
+.uploadForm button, .tableTitle button {
     -webkit-text-size-adjust: 100%;
     tab-size: 4;
     font-feature-settings: normal;
@@ -217,6 +217,7 @@ thead {
 th,
 td {
   padding: 1rem;
+  width: 10vw;
   text-align: left;
   font-size: 0.95rem;
 }
@@ -290,7 +291,7 @@ tbody tr:hover {
 
 .confidence.low {
   color: #dc2626; 
-}
+}d
 
 .confidence.medium {
   color: #f59e0b;
@@ -298,4 +299,15 @@ tbody tr:hover {
 
 .confidence.high {
   color: #0e8f3d; 
+}
+
+.tableTitle{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tableTitle button{
+  height: 3vh;
+  width: 5vw;
+  border: none;
 }
