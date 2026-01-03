@@ -177,7 +177,7 @@ export default function Home() {
                       />
                     </td>
                   </tr>
-
+                  {/* 
                   <tr>
                     <th>Trade</th>
                     <td>
@@ -189,7 +189,7 @@ export default function Home() {
                         disabled={!isEditing}
                       />
                     </td>
-                  </tr>
+                  </tr> */}
                 </tbody>
               </table>
             </div>
