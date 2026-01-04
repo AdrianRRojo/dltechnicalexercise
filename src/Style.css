@@ -14,12 +14,13 @@ a {
 #logo {
   width: 100%;
 }
-.tyContainer h2{
+.tyContainer h2 {
   text-align: center;
 }
 
 /* Form */
-.formContainer, .tyContainer {
+.formContainer,
+.tyContainer {
   background: #ffffff;
   padding: 2rem;
   border-radius: 12px;
@@ -68,7 +69,12 @@ a {
   font-size: 0.95rem;
   color: #374151;
 }
-.tyContainer a, .submit {
+.tyContainer a {
+  display: flex;
+  justify-content: center;
+}
+.submitButtonDiv {
+  margin-top: 1vh;
   display: flex;
   justify-content: center;
 }
@@ -195,12 +201,10 @@ a {
 .uploadForm button:hover,
 .tableTitle button:hover,
 .tyContainer button:hover,
-.buttons:hover{
+.buttons:hover {
   background: hsl(var(--primary) / 0.9);
   transform: scaleY(1.1);
 }
-
-
 
 .adminPage {
   min-height: 100vh;

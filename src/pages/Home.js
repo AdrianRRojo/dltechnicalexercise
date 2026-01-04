@@ -15,6 +15,7 @@ export default function Home() {
   const [file, setFile] = useState(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const [isVisible, setIsVisible] = useState(true);
 
@@ -86,6 +87,19 @@ export default function Home() {
     }
   };
 
+  const handleSubmitProposal = (company, contact, email, phone) => {
+    if (
+      company === "Not found" ||
+      contact === "Not found" ||
+      email === "Not found" ||
+      phone === "Not found"
+    ) {
+      setError("Please update Company contact information");
+      return false;
+    }
+    setError("");
+    return true;
+  };
   return (
     <div className="pageWrapper">
       {isVisible && (
@@ -116,17 +130,11 @@ export default function Home() {
 
       <div className="tableWrapper">
         {data && (
-          
           <div className="tablesContainer">
-                   <img
-            id="logo"
-            src={BridgelineLogo}
-            alt="Bridgline Technologies Logo"
-          />  
             <div className="infoTable">
               <div className="tableTitle">
                 <h3>Extracted Information</h3>
-                
+
                 <button onClick={() => setIsEditing((prev) => !prev)}>
                   {isEditing ? "Save" : "Edit"}
                 </button>
@@ -139,9 +147,16 @@ export default function Home() {
                       <input
                         type="text"
                         name="company"
+                        id="company"
                         value={data.company}
                         onChange={handleInputChange}
                         disabled={!isEditing}
+                        style={{
+                          border:
+                            submitAttempted && data.company === "Not found"
+                              ? "2px solid red"
+                              : "",
+                        }}
                       />
                     </td>
                   </tr>
@@ -152,9 +167,16 @@ export default function Home() {
                       <input
                         type="text"
                         name="contact"
+                        id="contact"
                         value={data.contact}
                         onChange={handleInputChange}
                         disabled={!isEditing}
+                        style={{
+                          border:
+                            submitAttempted && data.contact === "Not found"
+                              ? "2px solid red"
+                              : "",
+                        }}
                       />
                     </td>
                   </tr>
@@ -165,9 +187,16 @@ export default function Home() {
                       <input
                         type="text"
                         name="email"
+                        id="contact"
                         value={data.email}
                         onChange={handleInputChange}
                         disabled={!isEditing}
+                        style={{
+                          border:
+                            submitAttempted && data.email === "Not found"
+                              ? "2px solid red"
+                              : "",
+                        }}
                       />
                     </td>
                   </tr>
@@ -178,17 +207,45 @@ export default function Home() {
                       <input
                         type="text"
                         name="phone"
+                        id="phone"
                         value={data.phone}
                         onChange={handleInputChange}
                         disabled={!isEditing}
+                        style={{
+                          border:
+                            submitAttempted && data.phone === "Not found"
+                              ? "2px solid red"
+                              : "",
+                        }}
                       />
                     </td>
                   </tr>
                 </tbody>
               </table>
-              <a className="submit" href="/confirm">
-                <button className="buttons">Submit Proposal</button>
-              </a>
+              <div className="submitButtonDiv">
+                <button
+                  className="buttons submit"
+                  onClick={() => {
+                    setSubmitAttempted(true);
+                    const isValid = handleSubmitProposal(
+                      data.company,
+                      data.contact,
+                      data.email,
+                      data.phone
+                    );
+                    if (isValid) {
+                      window.location.href = "/confirm";
+                    }
+                  }}
+                >
+                  Submit Proposal
+                </button>
+              </div>
+              {error && (
+                <p className="error" style={{ color: "red" }}>
+                  * {error}
+                </p>
+              )}
             </div>
 
             <div className="scopeTable">
@@ -335,7 +392,7 @@ function extractFields(text) {
   const company =
     lines
       .map((l) => l.match(/^(.+?\b(?:llc|inc|corp|company|ltd)\.?\b)/i)?.[1])
-      .find(Boolean) || "Unknown";
+      .find(Boolean) || "Not found";
 
   const contact = extractContact(lines, email, phone, fullText);
 
@@ -511,7 +568,7 @@ function extractContact(lines, email, phone, fullText) {
     }
   }
 
-  return "Unknown";
+  return "Not found";
 }
 
 function extractScope(lines, fullText) {
