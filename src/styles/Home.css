@@ -205,7 +205,16 @@ a {
   background: hsl(var(--primary) / 0.9);
   transform: scaleY(1.1);
 }
-
+.errorMsg {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+.errorMsg img {
+  width: 1vw;
+  padding-right: 0.5vw;
+  padding-bottom: 0.25vh;
+}
 .adminPage {
   min-height: 100vh;
   padding: 2.5rem;
@@ -345,4 +354,24 @@ d .confidence.medium {
 .extractedTable {
   display: flex;
   flex-direction: column;
+}
+.scopeTable textarea {
+  border: 1px solid #ddd;
+  padding: 0.25rem;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  line-height: 1.25;
+  transition: border-color 0.2s;
+}
+
+.scopeTable textarea:focus {
+  outline: none;
+  border-color: #1548b6;
+}
+
+.scopeTable textarea:disabled {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+  color: #6b7280;
 }

@@ -2,9 +2,12 @@ import React, { useState } from "react";
 
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 
-import "../Style.css";
+import "../styles/Home.css";
 
 import BridgelineLogo from "../img/Bridgeline-Logo.png";
+import hazard from "../img/hazard-sign-svgrepo-com.svg";
+
+import Navbar from "../nav/Nav.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
@@ -101,229 +104,243 @@ export default function Home() {
     return true;
   };
   return (
-    <div className="pageWrapper">
-      {isVisible && (
-        <div className="formContainer">
-          <img
-            id="logo"
-            src={BridgelineLogo}
-            alt="Bridgline Technologies Logo"
-          />
-          <form className="uploadForm" onSubmit={handleUpload}>
-            <h2>Upload your proposal</h2>
-            <p className="subtitle">Select a file to upload.</p>
+    <div>
+      <Navbar />
+      <div className="pageWrapper">
+        {isVisible && (
+          <div className="formContainer">
+            <img
+              id="logo"
+              src={BridgelineLogo}
+              alt="Bridgline Technologies Logo"
+            />
+            <form className="uploadForm" onSubmit={handleUpload}>
+              <h2>Upload your proposal</h2>
+              <p className="subtitle">Select a file to upload.</p>
 
-            <label className="fileInputLabel">
-              <input
-                type="file"
-                accept=".pdf,.xlsx,.txt"
-                onChange={handleFileChange}
-              />
-              <span>{file ? file.name : "Choose File"}</span>
-            </label>
+              <label className="fileInputLabel">
+                <input
+                  type="file"
+                  accept=".pdf,.xlsx,.txt"
+                  onChange={handleFileChange}
+                />
+                <span>{file ? file.name : "Choose File"}</span>
+              </label>
 
-            <button type="submit">Upload</button>
-          </form>
-          {error && <p className="error"> {error} </p>}
-        </div>
-      )}
-
-      <div className="tableWrapper">
-        {data && (
-          <div className="tablesContainer">
-            <div className="infoTable">
-              <div className="tableTitle">
-                <h3>Extracted Information</h3>
-
-                <button onClick={() => setIsEditing((prev) => !prev)}>
-                  {isEditing ? "Save" : "Edit"}
-                </button>
-              </div>
-              <table className="extractedTable">
-                <tbody>
-                  <tr>
-                    <th>Company</th>
-                    <td>
-                      <input
-                        type="text"
-                        name="company"
-                        id="company"
-                        value={data.company}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        style={{
-                          border:
-                            submitAttempted && data.company === "Not found"
-                              ? "2px solid red"
-                              : "",
-                        }}
-                      />
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <th>Contact</th>
-                    <td>
-                      <input
-                        type="text"
-                        name="contact"
-                        id="contact"
-                        value={data.contact}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        style={{
-                          border:
-                            submitAttempted && data.contact === "Not found"
-                              ? "2px solid red"
-                              : "",
-                        }}
-                      />
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <th>Email</th>
-                    <td>
-                      <input
-                        type="text"
-                        name="email"
-                        id="contact"
-                        value={data.email}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        style={{
-                          border:
-                            submitAttempted && data.email === "Not found"
-                              ? "2px solid red"
-                              : "",
-                        }}
-                      />
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <th>Phone Number</th>
-                    <td>
-                      <input
-                        type="text"
-                        name="phone"
-                        id="phone"
-                        value={data.phone}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        style={{
-                          border:
-                            submitAttempted && data.phone === "Not found"
-                              ? "2px solid red"
-                              : "",
-                        }}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="submitButtonDiv">
-                <button
-                  className="buttons submit"
-                  onClick={() => {
-                    setSubmitAttempted(true);
-                    const isValid = handleSubmitProposal(
-                      data.company,
-                      data.contact,
-                      data.email,
-                      data.phone
-                    );
-                    if (isValid) {
-                      window.location.href = "/confirm";
-                    }
-                  }}
-                >
-                  Submit Proposal
-                </button>
-              </div>
-              {error && (
-                <p className="error" style={{ color: "red" }}>
-                  * {error}
-                </p>
-              )}
-            </div>
-
-            <div className="scopeTable">
-              <div className="tableTitle">
-                <h3>Scope of Work</h3>
-                {isScopeEditing && (
-                  <button onClick={handleAddScopeItem} className="addBtn">
-                    Add Item
-                  </button>
-                )}
-                <button onClick={() => setIsScopeEditing((prev) => !prev)}>
-                  {isScopeEditing ? "Save" : "Edit"}
-                </button>
-              </div>
-              <table className="extractedTable">
-                <thead>
-                  <tr>
-                    <th>Description</th>
-                    <th>Price</th>
-                    {isScopeEditing && <th>Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.scope && data.scope.length > 0 ? (
-                    data.scope.map((item, index) => (
-                      <tr key={index}>
-                        <td>
-                          <input
-                            type="text"
-                            value={item.description}
-                            onChange={(e) =>
-                              handleScopeChange(
-                                index,
-                                "description",
-                                e.target.value
-                              )
-                            }
-                            disabled={!isScopeEditing}
-                            style={{ width: "100%" }}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={item.price}
-                            onChange={(e) =>
-                              handleScopeChange(index, "price", e.target.value)
-                            }
-                            disabled={!isScopeEditing}
-                            style={{ width: "100%" }}
-                          />
-                        </td>
-                        {isScopeEditing && (
-                          <td>
-                            <button
-                              onClick={() => handleRemoveScopeItem(index)}
-                              className="removeBtn"
-                            >
-                              Remove
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={isScopeEditing ? 3 : 2}>
-                        No scope items found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {console.log("Data: ", data)}
+              <button type="submit">Upload</button>
+            </form>
+            {error && <p className="error"> {error} </p>}
           </div>
         )}
+
+        <div className="tableWrapper">
+          {data && (
+            <div className="tablesContainer">
+              <div className="infoTable">
+                <div className="tableTitle">
+                  <h3>Extracted Information</h3>
+
+                  <button onClick={() => setIsEditing((prev) => !prev)}>
+                    {isEditing ? "Save" : "Edit"}
+                  </button>
+                </div>
+                <table className="extractedTable">
+                  <tbody>
+                    <tr>
+                      <th>Company</th>
+                      <td>
+                        <input
+                          type="text"
+                          name="company"
+                          id="company"
+                          value={data.company}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          style={{
+                            border:
+                              submitAttempted && data.company === "Not found"
+                                ? "2px solid red"
+                                : "",
+                          }}
+                        />
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <th>Contact</th>
+                      <td>
+                        <input
+                          type="text"
+                          name="contact"
+                          id="contact"
+                          value={data.contact}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          style={{
+                            border:
+                              submitAttempted && data.contact === "Not found"
+                                ? "2px solid red"
+                                : "",
+                          }}
+                        />
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <th>Email</th>
+                      <td>
+                        <input
+                          type="text"
+                          name="email"
+                          id="contact"
+                          value={data.email}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          style={{
+                            border:
+                              submitAttempted && data.email === "Not found"
+                                ? "2px solid red"
+                                : "",
+                          }}
+                        />
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <th>Phone Number</th>
+                      <td>
+                        <input
+                          type="text"
+                          name="phone"
+                          id="phone"
+                          value={data.phone}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          style={{
+                            border:
+                              submitAttempted && data.phone === "Not found"
+                                ? "2px solid red"
+                                : "",
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div className="submitButtonDiv">
+                  <button
+                    className="buttons submit"
+                    onClick={() => {
+                      setSubmitAttempted(true);
+                      const isValid = handleSubmitProposal(
+                        data.company,
+                        data.contact,
+                        data.email,
+                        data.phone
+                      );
+                      if (isValid) {
+                        window.location.href = "/confirm";
+                      }
+                    }}
+                  >
+                    Submit Proposal
+                  </button>
+                </div>
+                {error && (
+                  <div className="errorMsg">
+                    <img src={hazard} alt="Error" />
+                    <p className="error" style={{ color: "red" }}>
+                      {error}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="scopeTable">
+                <div className="tableTitle">
+                  <h3>Scope of Work</h3>
+                  {isScopeEditing && (
+                    <button onClick={handleAddScopeItem} className="addBtn">
+                      Add Item
+                    </button>
+                  )}
+                  <button onClick={() => setIsScopeEditing((prev) => !prev)}>
+                    {isScopeEditing ? "Save" : "Edit"}
+                  </button>
+                </div>
+                <table className="extractedTable">
+                  <thead>
+                    <tr>
+                      <th>Description</th>
+                      <th>Price</th>
+                      {isScopeEditing && <th>Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.scope && data.scope.length > 0 ? (
+                      data.scope.map((item, index) => (
+                        <tr key={index}>
+                          <td>
+                            <textarea
+                              value={item.description}
+                              onChange={(e) =>
+                                handleScopeChange(
+                                  index,
+                                  "description",
+                                  e.target.value
+                                )
+                              }
+                              disabled={!isScopeEditing}
+                              rows="2"
+                              style={{
+                                width: "100%",
+                                resize: "vertical",
+                                minHeight: "50px",
+                              }}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={item.price}
+                              onChange={(e) =>
+                                handleScopeChange(
+                                  index,
+                                  "price",
+                                  e.target.value
+                                )
+                              }
+                              disabled={!isScopeEditing}
+                              style={{ width: "100%" }}
+                            />
+                          </td>
+                          {isScopeEditing && (
+                            <td>
+                              <button
+                                onClick={() => handleRemoveScopeItem(index)}
+                                className="removeBtn"
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={isScopeEditing ? 3 : 2}>
+                          No scope items found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {console.log("Data: ", data)}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -517,7 +534,7 @@ function extractContact(lines, email, phone, fullText) {
 
     let score = 5;
 
-    const prev2 = lines[i - 2]?.toLowerCase() || "";
+    // const prev2 = lines[i - 2]?.toLowerCase() || "";
     const prev1 = lines[i - 1]?.toLowerCase() || "";
     const next1 = lines[i + 1]?.toLowerCase() || "";
     const next2 = lines[i + 2]?.toLowerCase() || "";

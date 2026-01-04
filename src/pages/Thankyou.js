@@ -1,4 +1,4 @@
-import "../Style.css";
+import "../styles/Home.css";
 import BridgelineLogo from "../img/Bridgeline-Logo.png";
 
 export default function Thankyou() {
@@ -8,10 +8,12 @@ export default function Thankyou() {
         <img id="logo" src={BridgelineLogo} alt="Bridgline Technologies Logo" />
         <h2>Thank you for your interest!</h2>
         <p className="subtitle">
-           Your submission has been successfully uploaded.
+          Your submission has been successfully uploaded.
         </p>
 
-        <a href="/"><button>Submit a new proposal</button></a>
+        <a href="/">
+          <button>Submit a new proposal</button>
+        </a>
       </div>
     </div>
   );
