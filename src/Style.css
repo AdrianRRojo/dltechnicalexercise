@@ -1,6 +1,7 @@
 button,
 a {
   cursor: pointer;
+  text-decoration: none;
 }
 .pageWrapper {
   min-height: 100vh;
@@ -13,8 +14,12 @@ a {
 #logo {
   width: 100%;
 }
+.tyContainer h2{
+  text-align: center;
+}
+
 /* Form */
-.formContainer {
+.formContainer, .tyContainer {
   background: #ffffff;
   padding: 2rem;
   border-radius: 12px;
@@ -63,10 +68,15 @@ a {
   font-size: 0.95rem;
   color: #374151;
 }
-
+.tyContainer a, .submit {
+  display: flex;
+  justify-content: center;
+}
 /* Upload button */
 .uploadForm button,
-.tableTitle button {
+.tableTitle button,
+.tyContainer button,
+.buttons {
   -webkit-text-size-adjust: 100%;
   tab-size: 4;
   font-feature-settings: normal;
@@ -182,10 +192,15 @@ a {
   cursor: pointer;
 }
 
-.uploadForm button:hover {
+.uploadForm button:hover,
+.tableTitle button:hover,
+.tyContainer button:hover,
+.buttons:hover{
   background: hsl(var(--primary) / 0.9);
   transform: scaleY(1.1);
 }
+
+
 
 .adminPage {
   min-height: 100vh;

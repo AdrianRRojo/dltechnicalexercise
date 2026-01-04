@@ -48,7 +48,7 @@ export default function Home() {
   const handleAddScopeItem = () => {
     setData((prev) => ({
       ...prev,
-      scope: [...prev.scope, { description: "", price: "" }],
+      scope: [{ description: "", price: "" }, ...prev.scope],
     }));
   };
 
@@ -105,7 +105,7 @@ export default function Home() {
                 accept=".pdf,.xlsx,.txt"
                 onChange={handleFileChange}
               />
-              <span>Choose File</span>
+              <span>{file ? file.name : "Choose File"}</span>
             </label>
 
             <button type="submit">Upload</button>
@@ -116,10 +116,17 @@ export default function Home() {
 
       <div className="tableWrapper">
         {data && (
+          
           <div className="tablesContainer">
+                   <img
+            id="logo"
+            src={BridgelineLogo}
+            alt="Bridgline Technologies Logo"
+          />  
             <div className="infoTable">
               <div className="tableTitle">
                 <h3>Extracted Information</h3>
+                
                 <button onClick={() => setIsEditing((prev) => !prev)}>
                   {isEditing ? "Save" : "Edit"}
                 </button>
@@ -177,26 +184,21 @@ export default function Home() {
                       />
                     </td>
                   </tr>
-                  {/* 
-                  <tr>
-                    <th>Trade</th>
-                    <td>
-                      <input
-                        type="text"
-                        name="trade"
-                        value={data.trade}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                      />
-                    </td>
-                  </tr> */}
                 </tbody>
               </table>
+              <a className="submit" href="/confirm">
+                <button className="buttons">Submit Proposal</button>
+              </a>
             </div>
 
             <div className="scopeTable">
               <div className="tableTitle">
                 <h3>Scope of Work</h3>
+                {isScopeEditing && (
+                  <button onClick={handleAddScopeItem} className="addBtn">
+                    Add Item
+                  </button>
+                )}
                 <button onClick={() => setIsScopeEditing((prev) => !prev)}>
                   {isScopeEditing ? "Save" : "Edit"}
                 </button>
@@ -260,11 +262,6 @@ export default function Home() {
                   )}
                 </tbody>
               </table>
-              {isScopeEditing && (
-                <button onClick={handleAddScopeItem} className="addBtn">
-                  Add Item
-                </button>
-              )}
             </div>
 
             {console.log("Data: ", data)}
