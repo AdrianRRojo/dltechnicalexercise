@@ -1,5 +1,5 @@
 import React from "react";
-import "../Style.css";
+import "../styles/Home.css";
 
 const fakeEntries = [
   {
@@ -37,7 +37,6 @@ const getConfidenceClass = (score) => {
   return "high";
 };
 
-
 export default function Review() {
   return (
     <div className="adminPage">
@@ -64,11 +63,14 @@ export default function Review() {
                 <td>{entry.company}</td>
                 <td>{entry.uploadedBy}</td>
                 <td>{entry.uploadedAt}</td>
-                <td className={`confidence ${getConfidenceClass(entry.confidence)}`}>
-                    {(entry.confidence * 100).toFixed(2)}%
+                <td
+                  className={`confidence ${getConfidenceClass(
+                    entry.confidence
+                  )}`}
+                >
+                  {(entry.confidence * 100).toFixed(2)}%
                 </td>
 
-                
                 <td>
                   <span className={`status ${entry.status.toLowerCase()}`}>
                     {entry.status}
