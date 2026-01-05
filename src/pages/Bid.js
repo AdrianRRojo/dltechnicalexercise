@@ -1,36 +1,67 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Navbar from "../nav/Nav.js";
 import "../styles/Bid.css";
 
-const mockContractors = [
-  {
-    id: 1,
-    company: "Bridgeline",
-    contact: "Adrian Rojo",
-    phone: "(555) 123-4567",
-    email: "test@test",
-  }
-];
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 export default function Bid() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedContractors, setSelectedContractors] = useState([]);
+  const [selectedContractors, setSelectedContractors] = useState([]); 
   const [projectName, setProjectName] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const filteredContractors = mockContractors.filter(
-    (contractor) =>
-      contractor.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contractor.contact.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [contractors, setContractors] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const toggleContractor = (contractorId) => {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/itb/contractors`);
+        if (!res.ok) throw new Error("Failed to load contractors");
+
+        const json = await res.json();
+
+        if (!cancelled) setContractors(Array.isArray(json.contractors) ? json.contractors : []);
+      } catch (e) {
+        if (!cancelled) setError(e.message || "Failed to load contractors");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filteredContractors = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return contractors;
+
+    return contractors.filter(
+      (c) =>
+        (c.company || "").toLowerCase().includes(q) ||
+        (c.contact || "").toLowerCase().includes(q) ||
+        (c.email || "").toLowerCase().includes(q)
+    );
+  }, [contractors, searchTerm]);
+
+  const toggleContractor = (companyId) => {
     setSelectedContractors((prev) =>
-      prev.includes(contractorId)
-        ? prev.filter((id) => id !== contractorId)
-        : [...prev, contractorId]
+      prev.includes(companyId)
+        ? prev.filter((id) => id !== companyId)
+        : [...prev, companyId]
     );
   };
 
@@ -68,7 +99,25 @@ export default function Bid() {
             />
           </div>
 
+          {loading && (
+            <div style={{ padding: "12px" }}>
+              <p>Loading contractors…</p>
+            </div>
+          )}
+
+          {error && (
+            <div style={{ padding: "12px" }}>
+              <p style={{ color: "red" }}>{error}</p>
+            </div>
+          )}
+
           <div className="contractorList">
+            {!loading && !error && filteredContractors.length === 0 && (
+              <div style={{ padding: "12px" }}>
+                <p>No contractors found.</p>
+              </div>
+            )}
+
             {filteredContractors.map((contractor) => {
               const isSelected = selectedContractors.includes(contractor.id);
               return (
@@ -84,10 +133,18 @@ export default function Bid() {
                       onChange={() => {}}
                       className="checkbox"
                     />
-                    <div className="avatar">{contractor.company.charAt(0)}</div>
+                    <div className="avatar">
+                      {(contractor.company || "?").charAt(0)}
+                    </div>
                     <div className="contractor-info">
                       <h3 className="company-name">{contractor.company}</h3>
                       <p className="contact-name">{contractor.contact}</p>
+
+                      {typeof contractor.proposalsCount === "number" && (
+                        <p className="contact-name" style={{ opacity: 0.8 }}>
+                          {contractor.proposalsCount} proposal(s)
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -107,8 +164,7 @@ export default function Bid() {
             {showSuccess && (
               <div className="success-message">
                 <p className="success-text">
-                  ✓ Invitation sent to {selectedContractors.length}{" "}
-                  contractor(s)!
+                  ✓ Invitation sent to {selectedContractors.length} contractor(s)!
                 </p>
               </div>
             )}
@@ -120,7 +176,8 @@ export default function Bid() {
                 </h3>
                 <div className="chip-container">
                   {selectedContractors.map((id) => {
-                    const contractor = mockContractors.find((c) => c.id === id);
+                    const contractor = contractors.find((c) => c.id === id);
+                    if (!contractor) return null;
                     return (
                       <span key={id} className="chip">
                         {contractor.company}
@@ -186,8 +243,7 @@ export default function Bid() {
                       : ""
                   }`}
                 >
-                  Send Invitation to {selectedContractors.length || 0}{" "}
-                  Contractor(s)
+                  Send Invitation to {selectedContractors.length || 0} Contractor(s)
                 </button>
               </div>
             </div>

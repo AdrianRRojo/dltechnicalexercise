@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
-
 import "../styles/Home.css";
 
 import BridgelineLogo from "../img/Bridgeline-Logo.png";
@@ -9,10 +7,7 @@ import hazard from "../img/hazard-sign-svgrepo-com.svg";
 
 import Navbar from "../nav/Nav.js";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 export default function Home() {
   const [file, setFile] = useState(null);
@@ -21,29 +16,32 @@ export default function Home() {
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const [isVisible, setIsVisible] = useState(true);
-
   const [isEditing, setIsEditing] = useState(false);
   const [isScopeEditing, setIsScopeEditing] = useState(false);
 
+  const [loadingExtract, setLoadingExtract] = useState(false);
+  const [loadingConfirm, setLoadingConfirm] = useState(false);
+
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const selected = e.target.files?.[0] || null;
+    setFile(selected);
     setError("");
     setData(null);
+    setSubmitAttempted(false);
+    setIsVisible(true);
+    setIsEditing(false);
+    setIsScopeEditing(false);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
-    setData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleScopeChange = (index, field, value) => {
     setData((prev) => ({
       ...prev,
-      scope: prev.scope.map((item, i) =>
+      scope: (prev?.scope || []).map((item, i) =>
         i === index ? { ...item, [field]: value } : item
       ),
     }));
@@ -52,41 +50,68 @@ export default function Home() {
   const handleAddScopeItem = () => {
     setData((prev) => ({
       ...prev,
-      scope: [{ description: "", price: "" }, ...prev.scope],
+      scope: [{ description: "", price: "" }, ...(prev?.scope || [])],
     }));
   };
 
   const handleRemoveScopeItem = (index) => {
     setData((prev) => ({
       ...prev,
-      scope: prev.scope.filter((_, i) => i !== index),
+      scope: (prev?.scope || []).filter((_, i) => i !== index),
     }));
   };
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!file) {
+
+    if (!API_BASE_URL) {
+      setError(
+        "Missing REACT_APP_API_BASE_URL. Add it to your .env and restart React."
+      );
       return;
     }
-    setIsVisible(!isVisible);
 
-    const ext = file.name.split(".").pop().toLowerCase();
+    if (!file) {
+      setError("Please select a file.");
+      return;
+    }
+
+    setLoadingExtract(true);
+    setError("");
 
     try {
-      let text = "";
+      const formData = new FormData();
+      formData.append("file", file);
 
-      if (ext === "pdf") {
-        text = await extractPDFText(file);
-      } else {
-        setError("File Format not allowed");
-        return;
+      const res = await fetch(`${API_BASE_URL}/api/proposals/extract`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const msg = await safeReadError(res);
+        throw new Error(msg || "Server failed to extract.");
       }
-      setData(extractFields(text));
 
-      console.log("Uploading file:", file.name);
+      const json = await res.json();
+
+      // Expecting: { extracted: { company, contact, email, phone, scope } }
+      const extracted = json?.extracted || json;
+
+      setData({
+        company: extracted.company ?? "Not found",
+        contact: extracted.contact ?? "Not found",
+        email: extracted.email ?? "Not found",
+        phone: extracted.phone ?? "Not found",
+        scope: Array.isArray(extracted.scope) ? extracted.scope : [],
+      });
+
+      setIsVisible(false);
     } catch (err) {
       console.error(err);
-      setError("Failed to process file.");
+      setError(err.message || "Failed to process proposal.");
+    } finally {
+      setLoadingExtract(false);
     }
   };
 
@@ -103,17 +128,81 @@ export default function Home() {
     setError("");
     return true;
   };
+
+const handleConfirm = async () => {
+  if (!data) return;
+
+  if (!file) {
+    setError("Original file is missing. Please re-upload the proposal.");
+    return;
+  }
+
+  setSubmitAttempted(true);
+
+  const isValid = handleSubmitProposal(
+    data.company,
+    data.contact,
+    data.email,
+    data.phone
+  );
+  if (!isValid) return;
+
+  setLoadingConfirm(true);
+  setError("");
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append(
+      "payload",
+      JSON.stringify({
+        company: data.company,
+        contact: data.contact,
+        email: data.email,
+        phone: data.phone,
+        scope: Array.isArray(data.scope) ? data.scope : [],
+      })
+    );
+
+    const res = await fetch(`${API_BASE_URL}/api/proposals/confirm`, {
+      method: "POST",
+      body: formData, 
+    });
+
+    if (!res.ok) {
+      const msg = await safeReadError(res);
+      throw new Error(msg || "Server failed to save proposal.");
+    }
+
+    await res.json();
+    window.location.href = "/confirm";
+  } catch (err) {
+    console.error(err);
+    setError(err.message || "Failed to save proposal to database.");
+  } finally {
+    setLoadingConfirm(false);
+  }
+};
+
+
+  const handleStartOver = () => {
+    setFile(null);
+    setData(null);
+    setError("");
+    setSubmitAttempted(false);
+    setIsVisible(true);
+    setIsEditing(false);
+    setIsScopeEditing(false);
+  };
+
   return (
     <div>
       <Navbar />
       <div className="pageWrapper">
         {isVisible && (
           <div className="formContainer">
-            <img
-              id="logo"
-              src={BridgelineLogo}
-              alt="Bridgline Technologies Logo"
-            />
+            <img id="logo" src={BridgelineLogo} alt="Bridgeline Logo" />
+
             <form className="uploadForm" onSubmit={handleUpload}>
               <h2>Upload your proposal</h2>
               <p className="subtitle">Select a file to upload.</p>
@@ -123,589 +212,173 @@ export default function Home() {
                   type="file"
                   accept=".pdf,.xlsx,.txt"
                   onChange={handleFileChange}
+                  disabled={loadingExtract}
                 />
                 <span>{file ? file.name : "Choose File"}</span>
               </label>
 
-              <button type="submit">Upload</button>
+              <button type="submit" disabled={loadingExtract || !file}>
+                {loadingExtract ? "Extracting..." : "Upload"}
+              </button>
             </form>
-            {error && <p className="error"> {error} </p>}
+
+            {error && <p className="error">{error}</p>}
           </div>
         )}
 
-        <div className="tableWrapper">
-          {data && (
-            <div className="tablesContainer">
-              <div className="infoTable">
-                <div className="tableTitle">
-                  <h3>Extracted Information</h3>
-
-                  <button onClick={() => setIsEditing((prev) => !prev)}>
+        {data && (
+          <div className="tablesContainer">
+            {/* Extracted Info */}
+            <div className="infoTable">
+              <div className="tableTitle">
+                <h3>Extracted Information</h3>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button onClick={() => setIsEditing((p) => !p)}>
                     {isEditing ? "Save" : "Edit"}
                   </button>
+                  <button onClick={handleStartOver}>Start Over</button>
                 </div>
-                <table className="extractedTable">
-                  <tbody>
-                    <tr>
-                      <th>Company</th>
-                      <td>
-                        <input
-                          type="text"
-                          name="company"
-                          id="company"
-                          value={data.company}
-                          onChange={handleInputChange}
-                          disabled={!isEditing}
-                          style={{
-                            border:
-                              submitAttempted && data.company === "Not found"
-                                ? "2px solid red"
-                                : "",
-                          }}
-                        />
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <th>Contact</th>
-                      <td>
-                        <input
-                          type="text"
-                          name="contact"
-                          id="contact"
-                          value={data.contact}
-                          onChange={handleInputChange}
-                          disabled={!isEditing}
-                          style={{
-                            border:
-                              submitAttempted && data.contact === "Not found"
-                                ? "2px solid red"
-                                : "",
-                          }}
-                        />
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <th>Email</th>
-                      <td>
-                        <input
-                          type="text"
-                          name="email"
-                          id="contact"
-                          value={data.email}
-                          onChange={handleInputChange}
-                          disabled={!isEditing}
-                          style={{
-                            border:
-                              submitAttempted && data.email === "Not found"
-                                ? "2px solid red"
-                                : "",
-                          }}
-                        />
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <th>Phone Number</th>
-                      <td>
-                        <input
-                          type="text"
-                          name="phone"
-                          id="phone"
-                          value={data.phone}
-                          onChange={handleInputChange}
-                          disabled={!isEditing}
-                          style={{
-                            border:
-                              submitAttempted && data.phone === "Not found"
-                                ? "2px solid red"
-                                : "",
-                          }}
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div className="submitButtonDiv">
-                  <button
-                    className="buttons submit"
-                    onClick={() => {
-                      setSubmitAttempted(true);
-                      const isValid = handleSubmitProposal(
-                        data.company,
-                        data.contact,
-                        data.email,
-                        data.phone
-                      );
-                      if (isValid) {
-                        window.location.href = "/confirm";
-                      }
-                    }}
-                  >
-                    Submit Proposal
-                  </button>
-                </div>
-                {error && (
-                  <div className="errorMsg">
-                    <img src={hazard} alt="Error" />
-                    <p className="error" style={{ color: "red" }}>
-                      {error}
-                    </p>
-                  </div>
-                )}
               </div>
 
-              <div className="scopeTable">
-                <div className="tableTitle">
-                  <h3>Scope of Work</h3>
+              <table className="extractedTable">
+                <tbody>
+                  {["company", "contact", "email", "phone"].map((field) => (
+                    <tr key={field}>
+                      <th>{field.charAt(0).toUpperCase() + field.slice(1)}</th>
+                      <td>
+                        <input
+                          type="text"
+                          name={field}
+                          value={data[field] || ""}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          style={{
+                            border:
+                              submitAttempted &&
+                              (data[field] === "Not found" ||
+                                data[field]?.trim() === "")
+                                ? "2px solid red"
+                                : "",
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="submitButtonDiv">
+                <button
+                  className="buttons submit"
+                  onClick={handleConfirm}
+                  disabled={loadingConfirm}
+                >
+                  {loadingConfirm ? "Saving..." : "Submit Proposal"}
+                </button>
+              </div>
+
+              {error && (
+                <div className="errorMsg">
+                  <img src={hazard} alt="Error" />
+                  <p className="error" style={{ color: "red" }}>
+                    {error}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Scope */}
+            <div className="scopeTable">
+              <div className="tableTitle">
+                <h3>Scope of Work</h3>
+                <div style={{ display: "flex", gap: "8px" }}>
                   {isScopeEditing && (
                     <button onClick={handleAddScopeItem} className="addBtn">
                       Add Item
                     </button>
                   )}
-                  <button onClick={() => setIsScopeEditing((prev) => !prev)}>
+                  <button onClick={() => setIsScopeEditing((p) => !p)}>
                     {isScopeEditing ? "Save" : "Edit"}
                   </button>
                 </div>
-                <table className="extractedTable">
-                  <thead>
-                    <tr>
-                      <th>Description</th>
-                      <th>Price</th>
-                      {isScopeEditing && <th>Actions</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.scope && data.scope.length > 0 ? (
-                      data.scope.map((item, index) => (
-                        <tr key={index}>
-                          <td>
-                            <textarea
-                              value={item.description}
-                              onChange={(e) =>
-                                handleScopeChange(
-                                  index,
-                                  "description",
-                                  e.target.value
-                                )
-                              }
-                              disabled={!isScopeEditing}
-                              rows="2"
-                              style={{
-                                width: "100%",
-                                resize: "vertical",
-                                minHeight: "50px",
-                              }}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              value={item.price}
-                              onChange={(e) =>
-                                handleScopeChange(
-                                  index,
-                                  "price",
-                                  e.target.value
-                                )
-                              }
-                              disabled={!isScopeEditing}
-                              style={{ width: "100%" }}
-                            />
-                          </td>
-                          {isScopeEditing && (
-                            <td>
-                              <button
-                                onClick={() => handleRemoveScopeItem(index)}
-                                className="removeBtn"
-                              >
-                                Remove
-                              </button>
-                            </td>
-                          )}
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={isScopeEditing ? 3 : 2}>
-                          No scope items found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
               </div>
 
-              {console.log("Data: ", data)}
+              <table className="extractedTable">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Price</th>
+                    {isScopeEditing && <th>Actions</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.isArray(data.scope) && data.scope.length > 0 ? (
+                    data.scope.map((item, i) => (
+                      <tr key={i}>
+                        <td>
+                          <textarea
+                            value={item.description || ""}
+                            onChange={(e) =>
+                              handleScopeChange(i, "description", e.target.value)
+                            }
+                            disabled={!isScopeEditing}
+                            rows="2"
+                            style={{
+                              width: "100%",
+                              resize: "vertical",
+                              minHeight: "50px",
+                            }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={item.price || ""}
+                            onChange={(e) =>
+                              handleScopeChange(i, "price", e.target.value)
+                            }
+                            disabled={!isScopeEditing}
+                            style={{ width: "100%" }}
+                          />
+                        </td>
+                        {isScopeEditing && (
+                          <td>
+                            <button
+                              onClick={() => handleRemoveScopeItem(i)}
+                              className="removeBtn"
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={isScopeEditing ? 3 : 2}>
+                        No scope items found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-async function extractPDFText(file) {
-  const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-
-  let text = "";
-  let lines = [];
-
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-
-    const lineMap = new Map();
-
-    content.items.forEach((item) => {
-      const y = Math.round(item.transform[5]);
-      if (!lineMap.has(y)) {
-        lineMap.set(y, []);
-      }
-      lineMap.get(y).push(item);
-    });
-
-    const sortedLines = Array.from(lineMap.entries())
-      .sort((a, b) => b[0] - a[0])
-      .map(([y, items]) => {
-        return items
-          .sort((a, b) => a.transform[4] - b.transform[4])
-          .map((item) => item.str)
-          .join(" ")
-          .trim();
-      })
-      .filter((line) => line.length > 0);
-
-    lines = lines.concat(sortedLines);
-    text += sortedLines.join("\n") + "\n";
+async function safeReadError(res) {
+  try {
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      const j = await res.json();
+      return j?.message || j?.error || JSON.stringify(j);
+    }
+    return await res.text();
+  } catch {
+    return "";
   }
-
-  return { text, lines };
-}
-
-function extractFields(text) {
-  const { text: fullText, lines } =
-    typeof text === "string"
-      ? {
-          text,
-          lines: text
-            .split("\n")
-            .map((l) => l.trim())
-            .filter(Boolean),
-        }
-      : text;
-
-  const email =
-    fullText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ||
-    "Not found";
-
-  const phone =
-    fullText.match(
-      /(\+?\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/
-    )?.[0] || "Not found";
-
-  const company =
-    lines
-      .map((l) => l.match(/^(.+?\b(?:llc|inc|corp|company|ltd)\.?\b)/i)?.[1])
-      .find(Boolean) || "Not found";
-
-  const contact = extractContact(lines, email, phone, fullText);
-
-  const scope = extractScope(lines, fullText);
-
-  return { company, contact, email, phone, scope };
-}
-
-function extractContact(lines, email, phone, fullText) {
-  const candidates = [];
-
-  const HARD_BLOCKLIST = [
-    "llc",
-    "inc",
-    "corp",
-    "company",
-    "ltd",
-    "proposal",
-    "estimate",
-    "invoice",
-    "services",
-    "construction",
-    "plumbing",
-    "electrical",
-    "total",
-    "price",
-    "subtotal",
-    "tax",
-    "amount",
-    "balance",
-    "page",
-    "date",
-    "number",
-    "description",
-    "quantity",
-    "rate",
-    "street",
-    "avenue",
-    "road",
-    "drive",
-    "boulevard",
-    "lane",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "january",
-    "february",
-    "march",
-    "april",
-    "may",
-    "june",
-    "july",
-    "august",
-    "september",
-    "october",
-    "november",
-    "december",
-    "agreement",
-    "warranty",
-    "guarantee",
-    "terms",
-    "conditions",
-  ];
-
-  for (let i = 0; i < Math.min(lines.length, 50); i++) {
-    const line = lines[i].toLowerCase();
-
-    if (/^(contact|prepared by|submitted by|from|name):/i.test(line)) {
-      const nextLine = lines[i + 1]?.trim();
-      if (nextLine) {
-        const nameMatch = nextLine.match(
-          /^([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)/
-        );
-        if (nameMatch) {
-          return nameMatch[1];
-        }
-      }
-
-      const sameLine = lines[i].match(
-        /(?:contact|prepared by|submitted by|from|name):\s*([A-Z][a-z]+\s+[A-Z][a-z]+)/i
-      );
-      if (sameLine) {
-        return sameLine[1];
-      }
-    }
-  }
-
-  for (let i = 0; i < Math.min(lines.length, 80); i++) {
-    const line = lines[i]?.trim();
-    if (!line) continue;
-
-    const lower = line.toLowerCase();
-
-    if (line.length > 45 || line.length < 5) continue;
-    if (HARD_BLOCKLIST.some((word) => lower.includes(word))) continue;
-    if ((line.match(/[0-9$#%@]/g) || []).length > 2) continue;
-    if (line === line.toUpperCase() && line.length > 4) continue;
-
-    let match = null;
-    let patternType = "";
-
-    match = line.match(/^([A-Z][a-z]{1,15})\s+([A-Z][a-z]{1,15})$/);
-    if (match) patternType = "standard";
-
-    if (!match) {
-      match = line.match(
-        /^([A-Z][a-z]{1,15})\s+([A-Z]\.?)\s+([A-Z][a-z]{1,15})$/
-      );
-      if (match) patternType = "middle_initial";
-    }
-
-    if (!match) {
-      match = line.match(
-        /^([A-Z][a-z]+\s+[A-Z][a-z]+),?\s*(Jr\.?|Sr\.?|II|III|IV|PhD|PE|P\.E\.?|CPA|Esq\.?)$/i
-      );
-      if (match) patternType = "with_suffix";
-    }
-
-    if (!match) continue;
-
-    let score = 5;
-
-    // const prev2 = lines[i - 2]?.toLowerCase() || "";
-    const prev1 = lines[i - 1]?.toLowerCase() || "";
-    const next1 = lines[i + 1]?.toLowerCase() || "";
-    const next2 = lines[i + 2]?.toLowerCase() || "";
-
-    if (
-      /contact|prepared by|submitted by|from|attn|attention|estimator|project manager/i.test(
-        prev1
-      )
-    )
-      score += 20;
-    if (/@/.test(next1) || /@/.test(next2)) score += 15;
-    if (/\d{3}[-.)]\s*\d{3}/.test(next1) || /\d{3}[-.)]\s*\d{3}/.test(next2))
-      score += 12;
-    if (
-      /manager|director|owner|president|coordinator|engineer|specialist/i.test(
-        next1
-      )
-    )
-      score += 10;
-
-    if (i < 15) score += 10;
-    else if (i < 30) score += 5;
-
-    if (patternType === "middle_initial") score += 5;
-    if (patternType === "with_suffix") score += 4;
-
-    candidates.push({ name: line, score, index: i, pattern: patternType });
-  }
-
-  candidates.sort((a, b) => b.score - a.score);
-
-  console.log("Top 5 candidates:", candidates.slice(0, 5));
-
-  if (candidates.length > 0 && candidates[0].score >= 15) {
-    return candidates[0].name;
-  }
-
-  if (email !== "Not found" && email.includes("@")) {
-    const localPart = email.split("@")[0];
-    const parts = localPart.split(/[._-]/);
-
-    if (parts.length >= 2 && parts[0].length > 1 && parts[1].length > 1) {
-      const firstName =
-        parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
-      const lastName =
-        parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
-      return `${firstName} ${lastName}`;
-    }
-  }
-
-  return "Not found";
-}
-
-function extractScope(lines, fullText) {
-  const scopeItems = [];
-
-  const SCOPE_KEYWORDS =
-    /scope of work|work scope|items|services|deliverables|project scope|description|line items/i;
-  const END_KEYWORDS =
-    /total|subtotal|terms|conditions|signature|notes|thank you|sincerely/i;
-
-  let inScopeSection = false;
-  let scopeStartIndex = -1;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const lower = line.toLowerCase();
-
-    if (SCOPE_KEYWORDS.test(lower)) {
-      inScopeSection = true;
-      scopeStartIndex = i + 1;
-      continue;
-    }
-
-    if (inScopeSection && END_KEYWORDS.test(lower)) {
-      break;
-    }
-
-    if (inScopeSection && i > scopeStartIndex) {
-      if (line.length < 3) continue;
-      if (line === line.toUpperCase() && line.length < 50) continue;
-
-      let match = line.match(/^(.+?)\s+\$?([\d,]+\.?\d{0,2})$/);
-
-      if (match) {
-        const description = match[1].trim();
-        const price = match[2];
-
-        if (description.length > 5 && !/^\d+$/.test(description)) {
-          scopeItems.push({
-            description,
-            price: price.includes(".") ? `$${price}` : price,
-          });
-          continue;
-        }
-      }
-
-      const priceMatch = line.match(
-        /\$[\d,]+\.?\d{0,2}|(?:^|\s)([\d,]+\.\d{2})(?:\s|$)/
-      );
-
-      if (priceMatch) {
-        const priceIndex = line.indexOf(priceMatch[0]);
-        const description = line.substring(0, priceIndex).trim();
-        const price = priceMatch[0].trim();
-
-        if (description.length > 5) {
-          scopeItems.push({ description, price });
-          continue;
-        }
-      }
-
-      if (/^[-•*\d]+[\.)]\s+/.test(line) || /^[A-Z]/.test(line)) {
-        const cleanLine = line.replace(/^[-•*\d]+[\.)]\s+/, "").trim();
-
-        if (
-          cleanLine.length > 10 &&
-          !/^(scope|description|item|price|total|note)/i.test(cleanLine)
-        ) {
-          const nextLine = lines[i + 1];
-          const nextPrice = nextLine?.match(/^\$?[\d,]+\.?\d{0,2}$/);
-
-          if (nextPrice) {
-            scopeItems.push({
-              description: cleanLine,
-              price: nextPrice[0],
-            });
-            i++;
-          } else {
-            scopeItems.push({
-              description: cleanLine,
-              price: "",
-            });
-          }
-        }
-      }
-    }
-  }
-
-  if (scopeItems.length === 0) {
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      if (/^(\d+[\.)]\s+|[-•*]\s+)/.test(line)) {
-        const cleanLine = line.replace(/^(\d+[\.)]\s+|[-•*]\s+)/, "").trim();
-
-        if (cleanLine.length > 10) {
-          const priceInLine = cleanLine.match(/\$?[\d,]+\.?\d{2}$/);
-          const nextLine = lines[i + 1];
-          const priceNextLine = nextLine?.match(/^\$?[\d,]+\.?\d{2}$/);
-
-          if (priceInLine) {
-            const desc = cleanLine
-              .substring(0, cleanLine.indexOf(priceInLine[0]))
-              .trim();
-            scopeItems.push({ description: desc, price: priceInLine[0] });
-          } else if (priceNextLine) {
-            scopeItems.push({
-              description: cleanLine,
-              price: priceNextLine[0],
-            });
-            i++;
-          } else {
-            scopeItems.push({ description: cleanLine, price: "" });
-          }
-        }
-      }
-    }
-  }
-
-  return scopeItems.length > 0
-    ? scopeItems
-    : [{ description: "No items found", price: "" }];
 }
