@@ -25,7 +25,7 @@ npm install
 Create a `.env` file in `src/server`:
 ```
 PORT=3001
-MONGO_URI=mongodb://127.0.0.1:27017/bridgeline
+REACT_APP_DB_URI=mongodb://127.0.0.1:27017/bridgeline
 ```
 
 Start the server:
