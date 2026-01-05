@@ -12,7 +12,7 @@ This project models a core problem Bridgeline is solving in pre-construction: ta
 
 ### Clone the Repository
 ```
-git clone <repo-url>
+git clone https://github.com/AdrianRRojo/dltechnicalexercise.git
 cd dltechnicalexercise
 ```
 
