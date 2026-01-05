@@ -196,6 +196,55 @@ app.post("/api/proposals/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+app.get("/api/itb/contractors", async (req, res) => {
+  try {
+    const companies = await Company.find({})
+      .sort({ updatedAt: -1 })
+      .lean();
+
+
+    const counts = await Proposal.aggregate([
+      {
+        $group: {
+          _id: "$companyId",
+          proposalsCount: { $sum: 1 },
+          lastProposalAt: { $max: "$createdAt" },
+        },
+      },
+    ]);
+
+    const countMap = new Map(
+      counts.map((c) => [
+        String(c._id),
+        { proposalsCount: c.proposalsCount, lastProposalAt: c.lastProposalAt },
+      ])
+    );
+
+    const contractors = companies.map((c) => {
+      const stats = countMap.get(String(c._id)) || {
+        proposalsCount: 0,
+        lastProposalAt: null,
+      };
+
+      return {
+        id: String(c._id),
+        company: c.name,
+        contact: c.contact || "",
+        phone: c.phone || "",
+        email: c.email || "",
+        proposalsCount: stats.proposalsCount,
+        lastProposalAt: stats.lastProposalAt,
+      };
+    });
+
+    res.json({ contractors });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load contractors", message: err.message });
+  }
+});
+
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
